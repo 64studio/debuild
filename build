@@ -26,11 +26,9 @@ fi
 
 # create the base images
 # (but update it the base image exists already)
-echo "===== UPDATING BASE IMAGE ====="
 if ! pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH update; then
     pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH create
 fi
-echo "===== DONE UPDATING BASE IMAGE ====="
 
 # cleanup previous pbuilder results
 rm -rf ~/pbuilder/*_result
@@ -65,7 +63,7 @@ pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE*.dsc > ../build
 RESULT_DIR=$(dirname $(cat ../build-binary-package.log | grep -oP 'Logging to\s*\K(?:(?!\s+build).)*'))
 
 # output the result dir (somewhere)
-echi $RESULT_DIR > ../result_dir.log
+echo $RESULT_DIR > ../result_dir.log
 
 # go back to where the user was
 cd $CWD
