@@ -27,12 +27,13 @@ fi
 echo "===== DONE UPDATING BASE IMAGE ====="
 
 # cleanup previous pbuilder results
-rm -rf ~/pbuilder/*_result
+#rm -rf ~/pbuilder/*_result
 rm -rf ~/autobuild/tmp
 
 # make environment
-mkdir -p ~/autobuild/tmp
-cd ~/autobuild/tmp
+CWD=$(pwd)
+mkdir -p ~/autobuild/tmp/src
+cd ~/autobuild/tmp/src
 
 # download source code from git into this folder
 git clone $GIT_SOURCE .
@@ -46,18 +47,20 @@ sudo dpkg -i $PACKAGE-build-deps*.deb
 sudo apt-get install --fix-broken --yes
 
 # build source package
-dpkg-buildpackage -S -I.git --no-sign
+dpkg-buildpackage -S -I.git --no-sign > build-source-package.log 2>&1
 
 # remove the build depends
 sudo apt-get purge --auto-remove $PACKAGE-build-deps --yes
 
 # build binary package with pbuilder
 echo "===== BUILDING BINARY PACKAGE ====="
-pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE*.dsc
+pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE*.dsc > build-binary-package.log 2>&1
 echo "===== DONE BUILDING BINARY PACKAGE ====="
-cd ..
 
 
 echo "===== LIST DEBS ====="
-ls ~/pbuilder/stretch_result/ | grep .dsc
+
 echo "===== DONE LIST DEBS ====="
+
+# go back to where the user was
+cd $CWD
