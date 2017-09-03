@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+
+GIT_SOURCE=$1
+PBUILDER_RELEASE=$2
+PBUILDER_ARCH=$3
+
+
+# original loop code. May be useful eventually.
+#PBUILDER_RELEASES="stretch buster sid"
+#PBUILDER_ARCHES="amd64 armhf"
+#for PBUILDER_RELEASE in $PBUILDER_RELEASES; do
+#    for PBUILDER_ARCH in $PBUILDER_ARCHES; do
+#        if ! pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH update; then
+#            pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH create
+#        fi
+#    done
+#done
+
+
+# create the base images
+# (but update it the base image exists already)
+echo "===== UPDATING BASE IMAGE ====="
+if ! pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH update; then
+    pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH create
+fi
+echo "===== DONE UPDATING BASE IMAGE ====="
+
+# cleanup previous pbuilder results
+rm -rf ~/pbuilder/*_result
+rm -rf ~/autobuild/tmp
+
+# make environment
+mkdir -p ~/autobuild/tmp
+cd ~/autobuild/tmp
+
+# download source code from git
+git clone $GIT_SOURCE
+cd smart
+PACKAGE=$(cat debian/control | sed -n 's/^Source: //p')
+
+echo "Beginning build of $PACKAGE"
+
+# install build depends
+mk-build-deps
+sudo dpkg -i $PACKAGE-build-deps*.deb
+sudo apt-get install -force --yes
+
+# build source package
+dpkg-buildpackage -S -I.git --no-sign
+
+# remove the build depends
+sudo apt-get purge --auto-remove $PACKAGE-build-deps --yes
+
+# build binary package with pbuilder
+echo "===== BUILDING BINARY PACKAGE ====="
+pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE_*.dsc
+echo "===== DONE BUILDING BINARY PACKAGE ====="
+cd ..
+
+
+echo "===== LIST DEBS ====="
+ls ~/pbuilder/stretch_result/ | grep .dsc
+echo "===== DONE LIST DEBS ====="
