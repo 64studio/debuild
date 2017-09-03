@@ -34,9 +34,8 @@ rm -rf ~/autobuild/tmp
 mkdir -p ~/autobuild/tmp
 cd ~/autobuild/tmp
 
-# download source code from git
-git clone $GIT_SOURCE
-cd smart
+# download source code from git into this folder
+git clone $GIT_SOURCE .
 PACKAGE=$(cat debian/control | sed -n 's/^Source: //p')
 
 echo "Beginning build of $PACKAGE"
