@@ -4,7 +4,8 @@
 GIT_SOURCE=$1
 PBUILDER_RELEASE=$2
 PBUILDER_ARCH=$3
-
+ARGS=$4
+CWD=$(pwd)
 
 # original loop code. May be useful eventually.
 #PBUILDER_RELEASES="stretch buster sid"
@@ -17,6 +18,11 @@ PBUILDER_ARCH=$3
 #    done
 #done
 
+if [ ! "$ARGS" == "--yes" ]; then
+    echo "This script will DELETE all previously pbuilder-dist results."
+    read -p "Press enter to continue, or ^C to quit."
+fi
+
 
 # create the base images
 # (but update it the base image exists already)
@@ -27,18 +33,18 @@ fi
 echo "===== DONE UPDATING BASE IMAGE ====="
 
 # cleanup previous pbuilder results
-#rm -rf ~/pbuilder/*_result
+rm -rf ~/pbuilder/*_result
 rm -rf ~/autobuild/tmp
 
 # make environment
-CWD=$(pwd)
 mkdir -p ~/autobuild/tmp/src
 cd ~/autobuild/tmp/src
 
-# download source code from git into this folder
+# download source code from git
 git clone $GIT_SOURCE .
-PACKAGE=$(cat debian/control | sed -n 's/^Source: //p')
 
+# extract the source package name
+PACKAGE=$(cat debian/control | sed -n 's/^Source: //p')
 echo "Beginning build of $PACKAGE"
 
 # install build depends
@@ -47,20 +53,19 @@ sudo dpkg -i $PACKAGE-build-deps*.deb
 sudo apt-get install --fix-broken --yes
 
 # build source package
-dpkg-buildpackage -S -I.git --no-sign > build-source-package.log 2>&1
+dpkg-buildpackage -S -I.git --no-sign > ../build-source-package.log 2>&1
 
 # remove the build depends
 sudo apt-get purge --auto-remove $PACKAGE-build-deps --yes
 
 # build binary package with pbuilder
-echo "===== BUILDING BINARY PACKAGE ====="
-pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE*.dsc > build-binary-package.log 2>&1
-echo "===== DONE BUILDING BINARY PACKAGE ====="
+pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE*.dsc > ../build-binary-package.log 2>&1
 
+# hack but it works
+RESULT_DIR=$(dirname $(cat ../build-binary-package.log | grep -oP 'Logging to\s*\K(?:(?!\s+build).)*'))
 
-echo "===== LIST DEBS ====="
-
-echo "===== DONE LIST DEBS ====="
+# output the result dir (somewhere)
+echi $RESULT_DIR > ../result_dir.log
 
 # go back to where the user was
 cd $CWD
