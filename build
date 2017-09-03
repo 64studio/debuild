@@ -53,7 +53,7 @@ sudo apt-get purge --auto-remove $PACKAGE-build-deps --yes
 
 # build binary package with pbuilder
 echo "===== BUILDING BINARY PACKAGE ====="
-pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE_*.dsc
+pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE*.dsc
 echo "===== DONE BUILDING BINARY PACKAGE ====="
 cd ..
 
