@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+PACKAGE=$(cat debian/control | sed -n 's/^Source: //p')
+echo "Beginning backport of $PACKAGE"
+DSC_SOURCE=$1
+PBUILDER_RELEASE=$2
+PBUILDER_ARCH=$3
+ARGS=$4
+CWD=$(pwd)
+
+# original loop code. May be useful eventually.
+#PBUILDER_RELEASES="stretch buster sid"
+#PBUILDER_ARCHES="amd64 armhf"
+#for PBUILDER_RELEASE in $PBUILDER_RELEASES; do
+#    for PBUILDER_ARCH in $PBUILDER_ARCHES; do
+#        if ! pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH update; then
+#            pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH create
+#        fi
+#    done
+#done
+
+if [ ! "$ARGS" == "--yes" ]; then
+    echo "This script will DELETE all previously pbuilder-dist results."
+    read -p "Press enter to continue, or ^C to quit."
+fi
+
+
+# create the base images
+# (but update it the base image exists already)
+if ! pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH update; then
+    pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH create
+fi
+
+# cleanup previous pbuilder results
+rm -rf ~/pbuilder/*_result
+rm -rf ~/autobuild/tmp
+
+# make environment
+mkdir -p ~/autobuild/tmp/src
+cd ~/autobuild/tmp/src
+
+# download source code
+dget --extract $DSC_SOURCE
+cd nodejs-*/
+
+# indicate a backport
+dch --bpo "64studio Backport"
+echo -e "\n" | dch --bpo --distribution $PBUILDER_RELEASE-backports "64studio Automatic Backport"
+
+# extract the source package name
+PACKAGE=$(cat debian/control | sed -n 's/^Source: //p')
+echo "Beginning backport of $PACKAGE"
+
+# install build depends
+mk-build-deps
+sudo dpkg -i $PACKAGE-build-deps*.deb
+sudo apt-get install --fix-broken --yes
+
+# build source package
+dpkg-buildpackage -S -I.git --no-sign > ../build-source-package.log 2>&1
+
+# remove the build depends
+sudo apt-get purge --auto-remove $PACKAGE-build-deps --yes
+
+# build binary package with pbuilder
+pbuilder-dist $PBUILDER_RELEASE $PBUILDER_ARCH build ../$PACKAGE*.dsc > ../build-binary-package.log 2>&1
+
+# hack but it works
+RESULT_DIR=$(dirname $(cat ../build-binary-package.log | grep -oP 'Logging to\s*\K(?:(?!\s+build).)*'))
+
+# output the result dir (somewhere)
+echo $RESULT_DIR > ../result_dir.log
+
+# go back to where the user was
+cd $CWD
