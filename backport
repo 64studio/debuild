@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-PACKAGE=$(cat debian/control | sed -n 's/^Source: //p')
-echo "Beginning backport of $PACKAGE"
 DSC_SOURCE=$1
 PBUILDER_RELEASE=$2
 PBUILDER_ARCH=$3
