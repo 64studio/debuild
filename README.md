@@ -14,3 +14,18 @@ Usage:
 This file contains the pbuilder path where the built debs are located:
 
 `~/autobuild/tmp/result_dir.log`
+
+
+
+# backport
+
+Same as above, but will (attempt to) backport a Debian package
+
+Usage:
+
+```bash
+
+./backport <dscurl> <release> <arch>
+./backport http://http.debian.net/debian/pool/main/n/nodejs/nodejs_6.11.2~dfsg-5.dsc stretch amd64
+
+```
