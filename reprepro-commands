@@ -1,0 +1,9 @@
+
+# include a deb into the repo
+reprepro --basedir /var/www/apt --ignore=wrongdistribution --component=main include stretch ~/pbuilder/stretch_result/*.changes
+
+# remove a package from the repo
+reprepro --basedir /var/www/apt --ignore=wrongdistribution --component=main remove stretch pdk
+
+# list packages in a repo
+reprepro --basedir /var/www/apt list stretch
